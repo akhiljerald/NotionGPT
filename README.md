@@ -5,7 +5,7 @@ run the following code in your terminal:
 - ```touch data.json```
 
 ## Usage
-- ``` node .\trial.mjs```
+- ```node .\trial.mjs```
 
 ## Prerequisites
 - Node.js
