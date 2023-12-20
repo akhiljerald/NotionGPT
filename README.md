@@ -1,11 +1,14 @@
 ## Installation
 run the following code in your terminal:
-- ```git clone https://github.com/makenotion/notion-sdk-js.git```
-- ```npm install```
-- ```touch data.json```
+- ```git clone https://github.com/akhiljerald/NotionGPT.git```
 
-## Usage
-- ```node .\trial.mjs```
+terminal 1 :
+- ```cd client```
+- ```npm install```
+
+terminal 2 :
+- ```cd server```
+- ```npm install```
 
 ## Prerequisites
 - Node.js
