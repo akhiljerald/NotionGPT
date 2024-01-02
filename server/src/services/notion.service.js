@@ -6,6 +6,15 @@ const zlib = require('zlib')
 
 const { TokenData } = require("../models/index.model.js");
 
+let notion;
+let access_token;
+let globalResponse = [];
+
+const clientId = process.env.OAUTH_CLIENT_ID;
+const clientSecret = process.env.OAUTH_CLIENT_SECRET;
+const redirectUri = process.env.OAUTH_REDIRECT_URI;
+const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
 // const createDatabase = async (pageId, title) => {
 //     try {
 //         const newDb = await notion.databases.create({
@@ -125,16 +134,10 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-const notion = new Client({ auth: 'secret_Y7qJe8gj4IE4zYLgkIE960QUMTvCFotsufjsGbjZIkJ' });
-// const notionToken = process.env.NOTION_API_KEY;
-const clientId = process.env.OAUTH_CLIENT_ID;
-const clientSecret = process.env.OAUTH_CLIENT_SECRET;
-const redirectUri = process.env.OAUTH_REDIRECT_URI;
-const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
-let access_token;
-
-let globalResponse = [];
+function setNotionClient (accessToken){
+    notion = new Client({ auth: accessToken });
+}
 
 function getSystemContent(templateType) {
     let systemContent;
@@ -158,31 +161,26 @@ async function generateOutput(gptQuery, systemContent) {
     return chatCompletion.choices[0].message.content;
 }
 
-async function createTemplate(databaseId = null, pageId, gptQuery, template = null) {
-    console.log("databaseId == " + databaseId + "  " + "pageId == " + pageId + "  " + "gptQuery == " + gptQuery + "  " + "template == " + template);
+async function createTemplate(databaseId = null, pageId, gptQuery, template = null, accessToken) {
+    console.log("databaseId == " + databaseId + "  " + "pageId == " + pageId + "  " + "gptQuery == " + gptQuery + "  " + "template == " + template, "accessToken == " + accessToken);
     try {
-        console.log("1 inside service : createTemplate");
+        setNotionClient(accessToken);
         const system_content = getSystemContent(template);
         const output = await generateOutput(gptQuery, system_content);
-        console.log(output);
-        
+
         if (output.length > 2000) {
             globalResponse = await createPagesWithBlocks(output, pageId);
         }
         else {
-            console.log("2 inside service : createTemplate else part");
             globalResponse = await createPage(output, pageId);
         }
 
-        // Access globalResponse or perform other operations here
-        // console.log(globalResponse);
     } catch (error) {
         console.error("Error:", error);
     }
 }
 
 async function createPage(data, pageId) {
-    console.log("3 inside service : createPage");
     const response = await notion.pages.create({
         parent: {
             type: "page_id",
@@ -192,7 +190,7 @@ async function createPage(data, pageId) {
             title: [
                 {
                     text: {
-                        content: "JavaScript Roadmap",
+                        content: "Project Manager",
                     },
                 },
             ],
@@ -204,7 +202,7 @@ async function createPage(data, pageId) {
                     rich_text: [
                         {
                             text: {
-                                content: "Roadmap to learn JavaScript in 2 weeks",
+                                content: "Software development project",
                             },
                         },
                     ],
@@ -234,18 +232,14 @@ async function createPagesWithBlocks(output, pageId) {
     // const blockResponse = [];
     let len = output.length;
     let s = output;
-    console.log("3 if-> inside service : createPagesWithBlocks");
     while (len > 0) {
         const dataChunk = s.substring(0, 2000);
         if (pages.length === 0) {
             const firstPageResponse = await createPage(dataChunk, pageId);
-            console.log(firstPageResponse);
             pages.push(firstPageResponse);
         } else {
             const lastPageId = pages[pages.length - 1].id;
-            console.log(lastPageId);
             const blockResponse = await appendBlockToPage(dataChunk, lastPageId);
-            console.log(blockResponse);
         }
 
         s = s.substring(2000, len);
@@ -317,13 +311,24 @@ async function CreateToken(auth_code) {
             const accessTokenPromise = new Promise((resolve, reject) => {
                 responseBody.on('end', () => {
                     const parsedData = JSON.parse(data);
-                    console.log("parsedData start");
-                    console.log(parsedData);
-                    console.log("parsedData End");
-                    const doc = saveToken(parsedData);
+
+                    checkForWorkspaceExistenceInDatabase(parsedData.workspace_id)
+                        .then(val => {
+                            if (val) {
+                                const doc = updateToken(parsedData);
+                            }
+                            else {
+                                const doc = saveToken(parsedData);
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error in knowing workspace existance :", error);
+                            reject(error); // Reject the promise if there's an error
+                        });
+
+
                     fetchAccessToken(parsedData.bot_id)
                         .then(accessToken => {
-                            console.log("Access Token 1 :", accessToken);
                             resolve(accessToken); // Resolve the promise with the accessToken
                         })
                         .catch(error => {
@@ -346,6 +351,17 @@ async function CreateToken(auth_code) {
     }
 }
 
+const checkForWorkspaceExistenceInDatabase = async (workspace_id) => {
+    try {
+        const workspace = await TokenData.findOne({ workspace_id: workspace_id }, { access_token: 1 })
+        
+        return workspace ? true : false
+
+    } catch (error) {
+        console.error(error.message);
+    }
+}
+
 const saveToken = async (data) => {
     try {
 
@@ -360,9 +376,21 @@ const saveToken = async (data) => {
         //         ? error.message
         //         : "Couldn't Add to Db"
         // );
-        console.log("Falied to save the Token to database");
         console.log(error.message);
-        console.log("END Falied to save the Token to database");
+    }
+};
+
+const updateToken = async (data) => {
+    try {
+
+        const filter = { workspace_id: data.workspace_id }
+        const updateDocument = await TokenData.updateOne(filter, data);
+        return updateDocument;
+
+    } catch (error) {
+        console.log("Falied to update the Token in the database");
+        console.log(error.message);
+        console.log("END Falied to update the Token in the database");
     }
 };
 
@@ -372,11 +400,9 @@ async function fetchAccessToken(bot_id) {
 
         if (notionData) {
             const accessToken = notionData.access_token;
-            // access_token = accessToken;
-            console.log("Access Token inside fetchAccessToken :", accessToken);
             return accessToken;
         } else {
-            console.log("No document found");
+            console.log("No accessToken found");
             return null;
         }
     } catch (error) {

@@ -5,10 +5,12 @@ run the following code in your terminal:
 terminal 1 :
 - ```cd client```
 - ```npm install```
+- ```npm start```
 
 terminal 2 :
 - ```cd server```
 - ```npm install```
+- ```npm start```
 
 ## Prerequisites
 - Node.js

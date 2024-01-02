@@ -71,14 +71,7 @@ const getAllDatabaseList = async (request, response) => {
         });
 
         const data = await notionResponse.json();
-        console.log("data inside getAllDatabaseList");
-        console.log(data);
-        console.log("End of data inside getAllDatabaseList");
         const results = data.results;
-
-        console.log("results in getAllDatabaseList");
-        console.log(results);
-        console.log("End of results in getAllDatabaseList");
 
         results?.forEach((obj) => {
             dbList.push({
@@ -99,7 +92,6 @@ async function getAllPageList(request, response) {
     const workspaceURL = 'https://api.notion.com/v1/search';
     const pageList = [];
     const { access_token } = request.params;
-    console.log("access_token inside controllers 2: " + access_token);
 
     try {
         const notionResponse = await fetch(workspaceURL, {
@@ -142,9 +134,10 @@ async function template(request, response) {
         database,
         page,
         gptQuery,
-        template } = request.body;
+        template,
+        accessToken } = request.body;
     try {
-        const result = await notionService.createTemplate(database, page, gptQuery, template);
+        const result = await notionService.createTemplate(database, page, gptQuery, template, accessToken);
         response.json(result);
     } catch (error) {
         response.status(500).json({
@@ -155,14 +148,10 @@ async function template(request, response) {
 
 async function oauthCreateToken(request, response) {
     const { auth_code } = request.body;
-    console.log("auth_code: " + auth_code);
     try {
         console.log("Inside oauth ");
         await notionService.CreateToken(auth_code)
         .then(result => {
-            console.log("=== Start result inside oauthCreateToken  ===");
-            console.log(result);
-            console.log("=== End result inside oauthCreateToken ===");
             response.json({data: {access_token : result}});
         })
         .catch(error => {

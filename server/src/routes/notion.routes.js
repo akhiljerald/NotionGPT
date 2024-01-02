@@ -21,6 +21,7 @@ router.post("/blocks", notionController.appendBlock)
 router.post("/comments", notionController.addComments)
 
 router.post('/template',notionController.template)
+
 router.post('/createOauthToken',notionController.oauthCreateToken)
 
 module.exports = router

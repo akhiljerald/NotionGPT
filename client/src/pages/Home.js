@@ -6,9 +6,11 @@ import Paper from '@mui/material/Paper';
 import Grid from '@mui/material/Grid';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { postOauthCode } from '../api/notion';
+import { postOauthCode, postSecretKey } from '../api/notion';
 import { addAccessTokenToLocalStorage } from '../redux/slice';
 import { useSelector } from 'react-redux';
+import CustomButton from '../components/CustomButton';
+import { logOut } from '../utilities/helperFunctions';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
@@ -39,7 +41,7 @@ export default function Home() {
     useEffect(() => {
         // if ( (accessToken !== '' || accessToken !=='null') && !ranOnce && code) {
         console.log("1");
-        console.log("localstorage : " + localStorage.getItem('access_token') );
+        console.log("localstorage : " + localStorage.getItem('access_token'));
         if (localStorage.getItem('access_token') === '' || localStorage.getItem('access_token') === null) {
             console.log("2");
             console.log("ranOnce " + ranOnce);
@@ -58,9 +60,20 @@ export default function Home() {
                                     access_token: response.data.data.access_token,
                                 })
                             );
-                            localStorage.setItem("access_token", response.data.data.access_token);
-                            setRanOnce(true); // Set the flag to prevent multiple executions
+
+                            //     postSecretKey(response.data.data.access_token)
+                            //         .then(response => {
+                            //             console.log("postSecretKey response");
+                            //             console.log(response);
+                            //             console.log("ENDpostSecretKey response");
+                            //         })
+                            //         .catch(err => {
+                            //             console.log(err);
+                            //         });
+                            // }
                         }
+                        localStorage.setItem("access_token", response.data.data.access_token);
+                        setRanOnce(true); // Set the flag to prevent multiple executions
                     })
                     .catch(error => {
                         console.error("Error occurred while processing OAuth code:", error);
@@ -90,16 +103,20 @@ export default function Home() {
     console.log("accessToken inside Home.js : ", accessToken);
 
     const features = [
-        { title: 'Database', 'navigateTo': 'database' },
-        { title: 'Page', 'navigateTo': 'page' },
+        // { title: 'Database', 'navigateTo': 'database' },
+        // { title: 'Page', 'navigateTo': 'page' },
         { title: 'ChatGPT', 'navigateTo': 'chatgpt' }
     ]
 
     return (
         <>
-            <Typography variant='h5' gutterBottom sx={{ textAlign: 'center', fontStyle: 'italic' }}>
-                NotionGPT
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant='h5' gutterBottom sx={{ textAlign: 'center', fontStyle: 'italic' }}>
+                    NotionGPT
+                </Typography>
+
+                <CustomButton ButtonName="Logout" onclickfunction={logOut} />
+            </Box>
 
             <Box sx={{ flexGrow: 1, marginTop: 3 }}>
                 <Grid container rowSpacing={2} columnSpacing={4}>

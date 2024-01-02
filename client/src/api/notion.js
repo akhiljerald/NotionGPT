@@ -52,3 +52,17 @@ export async function postOauthCode(code) {
     }
 }
 
+// export async function postSecretKey(token) {
+//     const api = `${config.endpoint}/notion/token`;
+//     try {
+//         const response = await axios.post(api, { token: token })
+//         console.log("response inside postSecretKey function start");
+//         console.log(response);
+//         console.log("response inside postSecretKey function end");
+//         return response;
+//     } catch (error) {
+//         console.log("Some error : ", error.message);
+//         // throw error; // Re-throw the error to handle it elsewhere if needed
+//     }
+// }
+

@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react'
 import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
+import LoadingButton from '@mui/lab/LoadingButton';
 import { getDatabaseList, getPageList } from '../api/notion';
 import { Box, Button, Typography } from '@mui/material';
 import axios from 'axios';
 import { config } from '../App';
 import { useSelector } from 'react-redux';
+import CustomButton from '../components/CustomButton';
+import { logOut } from '../utilities/helperFunctions';
+import { useSnackbar } from 'notistack'
 
 const templateList = [
     'carrerCoach',
@@ -93,6 +97,10 @@ export default function Gpt() {
     const [gptQuery, setGptQuery] = useState('')
     const [template, setTemplate] = useState('')
 
+    const { enqueueSnackbar } = useSnackbar();
+
+    const [loading, setLoading] = useState(false);
+
     const accessToken = useSelector((state) => state.localStorageReducer.access_token) || localStorage.getItem('access_token');
 
 
@@ -121,9 +129,21 @@ export default function Gpt() {
                 database,
                 page,
                 gptQuery,
-                template
+                template,
+                accessToken
             }
-            const response = axios.post(api, body);
+            setLoading(true)
+            const response = await axios.post(api, body);
+
+            if (response.status === 200) {
+                enqueueSnackbar("Template Created successfully", { variant: "success" })
+                setLoading(false)
+            }
+            else{
+                enqueueSnackbar("couldn't create Template", { variant: "error" })
+                setLoading(false)
+            }
+
             console.log("response");
             console.log(response);
             setDatabase('');
@@ -138,9 +158,14 @@ export default function Gpt() {
 
     return (
         <>
-            <Typography variant='button' gutterBottom sx={{ display: 'flex', justifyContent: 'center' }}>
-                Work with ChatGpt
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', marginBottom: 1 }}>
+                <Typography variant='h5' gutterBottom >
+                    Work with ChatGpt
+                </Typography>
+
+                <CustomButton ButtonName="Logout" onclickfunction={logOut} />
+            </Box>
+
             {databaseList && (
                 <>
                     <ComboBox database={database} setDatabase={setDatabase} databaseList={databaseList} />
@@ -167,7 +192,18 @@ export default function Gpt() {
             <ComboBoxChooseTemplate template={template} setTemplate={setTemplate} templateList={templateList} />
 
             <br />
-            <Button variant="contained" color="secondary" sx={{ height: 50 }} onClick={handleCreateTemplate} >Create Template</Button>
+            {/* <Button variant="contained" color="secondary" sx={{ height: 50 }} onClick={handleCreateTemplate} >Create Template</Button> */}
+
+            <LoadingButton
+                sx={{ height: 50 , width: "15em" }}
+                color="secondary"
+                onClick={handleCreateTemplate}
+                loading={loading}
+                loadingPosition="end"
+                variant="contained"
+            >
+                <span>Create Template</span>
+            </LoadingButton>
 
         </>
     );
