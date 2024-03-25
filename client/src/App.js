@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addAccessTokenToLocalStorage } from './redux/slice';
 
 export const config = {
-  endpoint: "http://localhost:8080/v1",
+  endpoint: "http://localhost:8081/v1",
 };
 
 
