@@ -1,6 +1,7 @@
 ## Installation
 run the following code in your terminal:
 - ```git clone https://github.com/akhiljerald/NotionGPT.git```
+- ```git checkout branch-gagan```
 
 terminal 1 :
 - ```cd client```
