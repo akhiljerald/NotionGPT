@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Local certificate material (proxy/CA bundles, keys) — machine-specific,
+# never part of the project.
+*.pem
+*.crt
+*.cer
+*.key
+*.pfx
+
+# Local npm/editor state
+.npmrc
+npm-debug.log*
+.DS_Store

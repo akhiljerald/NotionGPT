@@ -1,135 +1,91 @@
 const { notionService } = require("../services/index.service.js");
 
-const addDatabase = async (request, response) => {
-    const pageId = request.body.pageId;
-    const title = request.body.databaseName;
+const NOTION_VERSION = '2022-06-28';
+const NOTION_SEARCH_URL = 'https://api.notion.com/v1/search';
 
-    try {
-        const result = await notionService.createDatabase(pageId, title);
-        response.json(result);
-    } catch (error) {
-        response.status(500).json({
-            message: error.message,
-        });
-    }
-};
+// Notion's title lives under a property whose *name* is workspace-defined
+// ("Name", "Title", "Task", ...); the only stable marker is type === 'title'.
+function extractTitle(result) {
+    const fromPageProperties = Object.values(result.properties ?? {})
+        .find((property) => property?.type === 'title');
 
-const addPage = async (request, response) => {
-    const { databaseID, pageName, header } = request.body
+    const richText = fromPageProperties?.title ?? result.title;
 
-    try {
-        const result = await notionService.createPage(databaseID, pageName, header);
-        response.json(result);
-    } catch (error) {
-        response.status(500).json({
-            message: error.message,
-        });
-    }
-};
+    return richText?.map((chunk) => chunk?.plain_text ?? '').join('').trim() || 'Untitled';
+}
 
-const appendBlock = async (request, response) => {
-    const { pageID, content } = request.body
+// `POST /v1/search` with an object filter replaces the removed `GET /v1/databases`
+// endpoint and paginates, so follow start_cursor until has_more is false.
+async function searchNotion(access_token, objectType) {
+    const results = [];
+    let start_cursor = undefined;
 
-    try {
-        const result = await notionService.appendBlocks(pageID, content);
-        response.json(result);
-    } catch (error) {
-        response.status(500).json({
-            message: error.message,
-        });
-    }
-};
-
-const addComments = async (request, response) => {
-    const { pageID, comment } = request.body;
-
-    try {
-        const result = await notionService.createComments(pageID, comment);
-        response.json(result);
-    } catch (error) {
-        response.status(500).json({
-            message: error.message,
-        });
-    }
-};
-
-
-
-const getAllDatabaseList = async (request, response) => {
-    const databasesURL = 'https://api.notion.com/v1/databases';
-    const dbList = [];
-    const { access_token } = request.params;
-
-    try {
-        const notionResponse = await fetch(databasesURL, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${access_token}`,
-                'Content-Type': 'application/json',
-                'Notion-Version': '2021-05-13',
-            },
-        });
-
-        const data = await notionResponse.json();
-        const results = data.results;
-
-        results?.forEach((obj) => {
-            dbList.push({
-                databaseId: obj.id,
-                databaseTitle: obj.title?.[0]?.text?.content || 'Untitled',
-            });
-        });
-
-        response.json({ data: dbList });
-
-    } catch (error) {
-        console.error('Error:', error);
-        response.status(500).json({ error: 'An error occurred while fetching the databases.' });
-    }
-};
-
-async function getAllPageList(request, response) {
-    const workspaceURL = 'https://api.notion.com/v1/search';
-    const pageList = [];
-    const { access_token } = request.params;
-
-    try {
-        const notionResponse = await fetch(workspaceURL, {
+    do {
+        const notionResponse = await fetch(NOTION_SEARCH_URL, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${access_token}`,
                 'Content-Type': 'application/json',
-                'Notion-Version': '2021-05-13',
+                'Notion-Version': NOTION_VERSION,
             },
             body: JSON.stringify({
-                query: "",
-                filter: {
-                    "property": "object",
-                    "value": "page"
-                }
-            })
+                query: '',
+                filter: { property: 'object', value: objectType },
+                start_cursor,
+            }),
         });
 
         const data = await notionResponse.json();
-        const results = data.results;
 
-        results?.forEach((obj) => {
-            const pageTitle = obj?.properties;
-            if (typeof (pageTitle) !== 'undefined') {
-                pageList.push({
-                    pageId: obj.id,
-                    pageTitle: pageTitle?.title?.title?.[0].text?.content || 'undefinedPageTitle',
-                });
-            }
+        if (!notionResponse.ok) {
+            throw Object.assign(
+                new Error(data.message || `Notion search failed (${notionResponse.status})`),
+                { status: notionResponse.status }
+            );
+        }
+
+        results.push(...(data.results ?? []));
+        start_cursor = data.has_more ? data.next_cursor : undefined;
+    } while (start_cursor);
+
+    return results;
+}
+
+const getAllDatabaseList = async (request, response, next) => {
+    const { access_token } = request.params;
+
+    try {
+        const results = await searchNotion(access_token, 'database');
+
+        response.json({
+            data: results.map((obj) => ({
+                databaseId: obj.id,
+                databaseTitle: extractTitle(obj),
+            })),
         });
-
-        response.json({ data: pageList });
     } catch (error) {
-        console.error('Error:', error);
+        next(error);
+    }
+};
+
+async function getAllPageList(request, response, next) {
+    const { access_token } = request.params;
+
+    try {
+        const results = await searchNotion(access_token, 'page');
+
+        response.json({
+            data: results.map((obj) => ({
+                pageId: obj.id,
+                pageTitle: extractTitle(obj),
+            })),
+        });
+    } catch (error) {
+        next(error);
     }
 }
 
-async function template(request, response) {
+async function template(request, response, next) {
     const {
         database,
         page,
@@ -138,29 +94,19 @@ async function template(request, response) {
         accessToken } = request.body;
     try {
         const result = await notionService.createTemplate(database, page, gptQuery, template, accessToken);
-        response.json(result);
+        response.json({ data: result });
     } catch (error) {
-        response.status(500).json({
-            message: error.message,
-        });
+        next(error);
     }
 }
 
-async function oauthCreateToken(request, response) {
+async function oauthCreateToken(request, response, next) {
     const { auth_code } = request.body;
     try {
-        console.log("Inside oauth ");
-        await notionService.CreateToken(auth_code)
-        .then(result => {
-            response.json({data: {access_token : result}});
-        })
-        .catch(error => {
-            console.error("Error fetching access token in controllers :", error);
-        });
+        const access_token = await notionService.CreateToken(auth_code);
+        response.json({ data: { access_token } });
     } catch (error) {
-        response.status(500).json({
-            message: error.message,
-        });
+        next(error);
     }
 }
 
@@ -168,10 +114,6 @@ module.exports = {
     notionController: {
         getAllDatabaseList,
         getAllPageList,
-        addDatabase,
-        addPage,
-        appendBlock,
-        addComments,
         template,
         oauthCreateToken
     },

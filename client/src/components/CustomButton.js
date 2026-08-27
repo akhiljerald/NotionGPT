@@ -1,6 +1,5 @@
 import { Button } from '@mui/material'
 import React from 'react'
-import { logOut } from '../utilities/helperFunctions'
 
 export default function CustomButton({ ButtonName, onclickfunction }) {
   return (

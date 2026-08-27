@@ -36,10 +36,11 @@ const ownerSchema = new mongoose.Schema({
   user : userSchema
 })
 
+// Only the fields the app actually depends on are required; everything else
+// Notion returns is optional metadata and must not be able to fail a login.
 const tokenSchema = new mongoose.Schema({
   request_id: {
     type: String,
-    required: true,
   },
   access_token: {
     type: String,
@@ -47,7 +48,6 @@ const tokenSchema = new mongoose.Schema({
   },
   token_type: {
     type: String,
-    required: true,
   },
   bot_id: {
     type: String,
@@ -56,10 +56,10 @@ const tokenSchema = new mongoose.Schema({
   workspace_id: {
     type: String,
     required: true,
+    index: true,
   },
   workspace_name: {
     type: String,
-    required: true,
   },
   workspace_icon: {
     type: String,
@@ -68,7 +68,7 @@ const tokenSchema = new mongoose.Schema({
     type: String,
   },
   owner: ownerSchema,
-})
+}, { timestamps: true })
 
 const TokenData = mongoose.model("tokenData", tokenSchema)
 
