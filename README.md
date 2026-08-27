@@ -1,13 +1,12 @@
 # NotionGPT
 
 Send a prompt to OpenAI and write the completion into a Notion page. React +
-Vite client, Express/MongoDB server, authenticating to Notion via OAuth.
+Vite client, stateless Express server, authenticating to Notion via OAuth.
 
 ## Prerequisites
 
 - **Node.js 18+** (the server relies on the global `fetch` built into Node 18+)
 - **npm**
-- **MongoDB** — either a local `mongod` or a MongoDB Atlas cluster
 - An **OpenAI API key** — https://platform.openai.com/api-keys
 - A **public Notion integration** — https://www.notion.so/my-integrations
   - It must be a *Public* integration; a private/internal one has no OAuth flow.
@@ -27,9 +26,9 @@ cp server/.env.example server/.env
 cp client/.env.example client/.env
 ```
 
-`server/.env` holds the secrets (OpenAI key, Notion OAuth client secret, Mongo
-URI). `client/.env` holds only public values — Vite inlines every `VITE_*` var
-into the JS bundle, so a secret placed there ships to the browser.
+`server/.env` holds the secrets (OpenAI key, Notion OAuth client secret).
+`client/.env` holds only public values — Vite inlines every `VITE_*` var into
+the JS bundle, so a secret placed there ships to the browser.
 
 `OAUTH_REDIRECT_URI` (server), `VITE_OAUTH_REDIRECT_URI` (client), and the
 redirect URI registered on the Notion integration must all be identical, or
@@ -53,8 +52,7 @@ npm install
 npm start          # http://localhost:3000
 ```
 
-Check the server came up: `curl http://localhost:8081/health` →
-`{"ok":true,"db":true}`. `db:false` means Mongo isn't reachable.
+Check the server came up: `curl http://localhost:8081/health` → `{"ok":true}`.
 
 Then open http://localhost:3000, click **Connect**, authorize the workspace, and
 pick a page under **ChatGPT**. Only pages explicitly shared with your
@@ -64,7 +62,7 @@ integration during the OAuth consent step will appear in the dropdowns.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Liveness + Mongo connection state |
+| `GET` | `/health` | Liveness check |
 | `POST` | `/v1/notion/createOauthToken` | Exchange an OAuth `code` for an access token |
 | `GET` | `/v1/notion/pageList/:access_token` | Pages shared with the integration |
 | `GET` | `/v1/notion/databaseList/:access_token` | Databases shared with the integration |

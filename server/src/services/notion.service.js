@@ -1,8 +1,6 @@
 const OpenAI = require("openai");
 const { Client } = require("@notionhq/client")
 
-const { TokenData } = require("../models/index.model.js");
-
 let notion;
 
 const clientId = process.env.OAUTH_CLIENT_ID;
@@ -199,31 +197,11 @@ async function CreateToken(auth_code) {
         );
     }
 
-    // Persist before returning: the previous version raced the DB write against
-    // the read, so a first-time login could hand back a null token.
-    const exists = await checkForWorkspaceExistenceInDatabase(parsedData.workspace_id);
-    if (exists) {
-        await updateToken(parsedData);
-    } else {
-        await saveToken(parsedData);
-    }
-
+    // The token is returned to the client, which keeps it in localStorage and
+    // sends it back on each request. Nothing server-side ever reads it again,
+    // so there is nothing to persist.
     return parsedData.access_token;
 }
-
-const checkForWorkspaceExistenceInDatabase = async (workspace_id) => {
-    const workspace = await TokenData.findOne({ workspace_id: workspace_id }, { access_token: 1 });
-    return Boolean(workspace);
-}
-
-const saveToken = async (data) => {
-    const insertToken = new TokenData(data);
-    return await insertToken.save();
-};
-
-const updateToken = async (data) => {
-    return await TokenData.updateOne({ workspace_id: data.workspace_id }, data);
-};
 
 module.exports = {
     notionService: {
