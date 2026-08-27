@@ -1,13 +1,5 @@
-const reportWebVitals = onPerfEntry => {
-  if (onPerfEntry && onPerfEntry instanceof Function) {
-    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
-      getCLS(onPerfEntry);
-      getFID(onPerfEntry);
-      getFCP(onPerfEntry);
-      getLCP(onPerfEntry);
-      getTTFB(onPerfEntry);
-    });
-  }
-};
-
-export default reportWebVitals;
+// DEAD FILE — safe to delete.
+//
+// create-react-app scaffolding. index.jsx called reportWebVitals() with no
+// callback, which made it a no-op, so nothing was ever measured. Removed along
+// with the web-vitals dependency.

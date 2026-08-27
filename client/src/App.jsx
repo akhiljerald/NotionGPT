@@ -10,11 +10,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addAccessTokenToLocalStorage } from './redux/slice';
 import { readAccessToken } from './utilities/helperFunctions';
 
-const notionClientId = process.env.REACT_APP_NOTION_CLIENT_ID;
-const oauthRedirectUri = process.env.REACT_APP_OAUTH_REDIRECT_URI || 'http://localhost:3000/home/';
+const notionClientId = import.meta.env.VITE_NOTION_CLIENT_ID;
+const oauthRedirectUri = import.meta.env.VITE_OAUTH_REDIRECT_URI || 'http://localhost:3000/home/';
 
 export const config = {
-  endpoint: process.env.REACT_APP_API_ENDPOINT || "http://localhost:8081/v1",
+  endpoint: import.meta.env.VITE_API_ENDPOINT || "http://localhost:8081/v1",
   // Built from env so the client id isn't baked into source. Note that a
   // client id is public by design; the matching *secret* stays server-side.
   notionAuthUrl: notionClientId

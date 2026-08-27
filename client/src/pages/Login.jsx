@@ -66,7 +66,7 @@ export default function Login() {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2 }} >
                     <Button href={config.notionAuthUrl} disabled={!config.notionAuthUrl}>
-                        {config.notionAuthUrl ? 'Connect' : 'Set REACT_APP_NOTION_CLIENT_ID'}
+                        {config.notionAuthUrl ? 'Connect' : 'Set VITE_NOTION_CLIENT_ID'}
                     </Button>
                     <Typography variant='body1' gutterBottom sx={{ marginLeft: '2rem', position: 'relative', left: '-25px', top: '5px' }}>
                         your Notion app with {ProjectName}

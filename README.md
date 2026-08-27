@@ -1,7 +1,7 @@
 # NotionGPT
 
-Send a prompt to OpenAI and write the completion into a Notion page. React (CRA)
-client + Express/MongoDB server, authenticating to Notion via OAuth.
+Send a prompt to OpenAI and write the completion into a Notion page. React +
+Vite client, Express/MongoDB server, authenticating to Notion via OAuth.
 
 ## Prerequisites
 
@@ -28,10 +28,10 @@ cp client/.env.example client/.env
 ```
 
 `server/.env` holds the secrets (OpenAI key, Notion OAuth client secret, Mongo
-URI). `client/.env` holds only public values — CRA inlines every `REACT_APP_*`
-var into the JS bundle, so a secret placed there ships to the browser.
+URI). `client/.env` holds only public values — Vite inlines every `VITE_*` var
+into the JS bundle, so a secret placed there ships to the browser.
 
-`OAUTH_REDIRECT_URI` (server), `REACT_APP_OAUTH_REDIRECT_URI` (client), and the
+`OAUTH_REDIRECT_URI` (server), `VITE_OAUTH_REDIRECT_URI` (client), and the
 redirect URI registered on the Notion integration must all be identical, or
 Notion rejects the token exchange.
 
@@ -101,5 +101,5 @@ are wired up. Add an entry there and to `templateList` in
 the Connect flow and select pages on the Notion consent screen.
 
 **`401` / `invalid_grant` on connect** — `OAUTH_REDIRECT_URI`,
-`REACT_APP_OAUTH_REDIRECT_URI`, and the redirect URI registered on the Notion
+`VITE_OAUTH_REDIRECT_URI`, and the redirect URI registered on the Notion
 integration must match character for character, trailing slash included.
